@@ -23,6 +23,7 @@ void load_idtr(int limit, int addr);
 void asm_inthandler21(void);
 void asm_inthandler27(void);
 void asm_inthandler2c(void);
+void asm_inthandler20(void);
 int load_cr0(void);
 void store_cr0(int cr0);
 unsigned int memtest_sub(unsigned int start, unsigned int end);
@@ -171,3 +172,14 @@ void sheet_updown(struct SHEET *sht, int height);
 void sheet_refresh(struct SHEET *sht, int bx0, int by0, int bx1, int by1);
 void sheet_slide(struct SHEET *sht, int vx0, int vy0);
 void sheet_free(struct SHEET *sht);
+
+/*timer.c*/
+struct TIMERCTL{
+	unsigned int count;
+	unsigned int timeout;
+	struct FIFO8 *fifo;
+	unsigned char data;
+};
+
+void init_pit(void);
+void settimer(unsigned int timeout, struct FIFO8 *fifo, unsigned char data);

@@ -13,8 +13,8 @@
     13 00000000                                 		GLOBAL	_load_gdtr, _load_idtr
     14 00000000                                 		GLOBAL  _load_cr0, _store_cr0
     15 00000000                                 		GLOBAL 	_memtest_sub
-    16 00000000                                 		GLOBAL	_asm_inthandler21, _asm_inthandler27, _asm_inthandler2c
-    17 00000000                                 		EXTERN	_inthandler21, _inthandler27, _inthandler2c
+    16 00000000                                 		GLOBAL	_asm_inthandler21, _asm_inthandler27, _asm_inthandler2c, _asm_inthandler20
+    17 00000000                                 		EXTERN	_inthandler21, _inthandler27, _inthandler2c, _inthandler20
     18 00000000                                 
     19                                          [SECTION .text]
     20 00000000                                 
@@ -92,8 +92,8 @@
     92 00000064 66 89 44 24 06                  		MOV		[ESP+6],AX
     93 00000069 0F 01 5C 24 06                  		LIDT	[ESP+6]
     94 0000006E C3                              		RET
-    95 0000006F                                 
-    96 0000006F                                 _asm_inthandler21:
+    95 0000006F                                 		
+    96 0000006F                                 _asm_inthandler20:
     97 0000006F 06                              		PUSH	ES
     98 00000070 1E                              		PUSH	DS
     99 00000071 60                              		PUSHAD
@@ -102,14 +102,14 @@
    102 00000075 66 8C D0                        		MOV		AX,SS
    103 00000078 8E D8                           		MOV		DS,AX
    104 0000007A 8E C0                           		MOV		ES,AX
-   105 0000007C E8 [00000000]                   		CALL	_inthandler21
+   105 0000007C E8 [00000000]                   		CALL	_inthandler20
    106 00000081 58                              		POP		EAX
    107 00000082 61                              		POPAD
    108 00000083 1F                              		POP		DS
    109 00000084 07                              		POP		ES
    110 00000085 CF                              		IRETD
-   111 00000086                                 
-   112 00000086                                 _asm_inthandler27:
+   111 00000086                                 		
+   112 00000086                                 _asm_inthandler21:
    113 00000086 06                              		PUSH	ES
    114 00000087 1E                              		PUSH	DS
    115 00000088 60                              		PUSHAD
@@ -118,14 +118,14 @@
    118 0000008C 66 8C D0                        		MOV		AX,SS
    119 0000008F 8E D8                           		MOV		DS,AX
    120 00000091 8E C0                           		MOV		ES,AX
-   121 00000093 E8 [00000000]                   		CALL	_inthandler27
+   121 00000093 E8 [00000000]                   		CALL	_inthandler21
    122 00000098 58                              		POP		EAX
    123 00000099 61                              		POPAD
    124 0000009A 1F                              		POP		DS
    125 0000009B 07                              		POP		ES
    126 0000009C CF                              		IRETD
    127 0000009D                                 
-   128 0000009D                                 _asm_inthandler2c:
+   128 0000009D                                 _asm_inthandler27:
    129 0000009D 06                              		PUSH	ES
    130 0000009E 1E                              		PUSH	DS
    131 0000009F 60                              		PUSHAD
@@ -134,55 +134,71 @@
    134 000000A3 66 8C D0                        		MOV		AX,SS
    135 000000A6 8E D8                           		MOV		DS,AX
    136 000000A8 8E C0                           		MOV		ES,AX
-   137 000000AA E8 [00000000]                   		CALL	_inthandler2c
+   137 000000AA E8 [00000000]                   		CALL	_inthandler27
    138 000000AF 58                              		POP		EAX
    139 000000B0 61                              		POPAD
    140 000000B1 1F                              		POP		DS
    141 000000B2 07                              		POP		ES
    142 000000B3 CF                              		IRETD
-   143 000000B4                                 		
-   144 000000B4                                 _load_cr0: 		; int load_cr0(void);
-   145 000000B4 0F 20 C0                        		MOV		EAX, CR0
-   146 000000B7 C3                              		RET
-   147 000000B8                                 		
-   148 000000B8                                 _store_cr0:		; void store_cr0(int cr0);
-   149 000000B8 8B 44 24 04                     		MOV 	EAX, [ESP+4]
-   150 000000BC 0F 22 C0                        		MOV		CR0, EAX
-   151 000000BF C3                              		RET
-   152 000000C0                                 
-   153 000000C0                                 _memtest_sub:	; unsigned int memtest_sub(unsigned int start, unsigned int end);
-   154 000000C0 57                              		PUSH	EDI
-   155 000000C1 56                              		PUSH	ESI
-   156 000000C2 53                              		PUSH	EBX
-   157 000000C3 BE AA55AA55                     		MOV		ESI, 0XAA55AA55
-   158 000000C8 BF 55AA55AA                     		MOV		EDI, 0X55AA55AA
-   159 000000CD 8B 44 24 10                     		MOV		EAX, [ESP + 12 + 4]
-   160 000000D1                                 		
-   161 000000D1                                 mts_loop:
-   162 000000D1 89 C3                           		MOV		EBX, EAX
-   163 000000D3 81 C3 00000FFC                  		ADD		EBX, 0XFFC
-   164 000000D9 8B 13                           		MOV		EDX, [EBX]
-   165 000000DB 89 33                           		MOV		[EBX], ESI
-   166 000000DD 83 33 FF                        		XOR		DWORD [EBX], 0XFFFFFFFF
-   167 000000E0 3B 3B                           		CMP		EDI, [EBX]
-   168 000000E2 75 18                           		JNE		mts_fin
-   169 000000E4 83 33 FF                        		XOR		DWORD [EBX], 0XFFFFFFFF
-   170 000000E7 3B 33                           		CMP		ESI, [EBX]
-   171 000000E9 75 11                           		JNE		mts_fin
-   172 000000EB 89 13                           		MOV		[EBX], EDX
-   173 000000ED 05 00001000                     		ADD		EAX, 0X1000
-   174 000000F2 3B 44 24 14                     		CMP		EAX, [ESP+12+8]
-   175 000000F6                                 		
-   176 000000F6 76 D9                           		JBE		mts_loop
-   177 000000F8 5B                              		POP 	EBX
-   178 000000F9 5E                              		POP		ESI
-   179 000000FA 5F                              		POP		EDI
-   180 000000FB C3                              		RET
-   181 000000FC                                 		
-   182 000000FC                                 mts_fin:
-   183 000000FC 89 13                           		MOV		[EBX], EDX
-   184 000000FE 5B                              		POP		EBX
-   185 000000FF 5E                              		POP		ESI
-   186 00000100 5F                              		POP		EDI
-   187 00000101 C3                              		RET
-   188 00000102                                 		
+   143 000000B4                                 
+   144 000000B4                                 _asm_inthandler2c:
+   145 000000B4 06                              		PUSH	ES
+   146 000000B5 1E                              		PUSH	DS
+   147 000000B6 60                              		PUSHAD
+   148 000000B7 89 E0                           		MOV		EAX,ESP
+   149 000000B9 50                              		PUSH	EAX
+   150 000000BA 66 8C D0                        		MOV		AX,SS
+   151 000000BD 8E D8                           		MOV		DS,AX
+   152 000000BF 8E C0                           		MOV		ES,AX
+   153 000000C1 E8 [00000000]                   		CALL	_inthandler2c
+   154 000000C6 58                              		POP		EAX
+   155 000000C7 61                              		POPAD
+   156 000000C8 1F                              		POP		DS
+   157 000000C9 07                              		POP		ES
+   158 000000CA CF                              		IRETD
+   159 000000CB                                 		
+   160 000000CB                                 _load_cr0: 		; int load_cr0(void);
+   161 000000CB 0F 20 C0                        		MOV		EAX, CR0
+   162 000000CE C3                              		RET
+   163 000000CF                                 		
+   164 000000CF                                 _store_cr0:		; void store_cr0(int cr0);
+   165 000000CF 8B 44 24 04                     		MOV 	EAX, [ESP+4]
+   166 000000D3 0F 22 C0                        		MOV		CR0, EAX
+   167 000000D6 C3                              		RET
+   168 000000D7                                 
+   169 000000D7                                 _memtest_sub:	; unsigned int memtest_sub(unsigned int start, unsigned int end);
+   170 000000D7 57                              		PUSH	EDI
+   171 000000D8 56                              		PUSH	ESI
+   172 000000D9 53                              		PUSH	EBX
+   173 000000DA BE AA55AA55                     		MOV		ESI, 0XAA55AA55
+   174 000000DF BF 55AA55AA                     		MOV		EDI, 0X55AA55AA
+   175 000000E4 8B 44 24 10                     		MOV		EAX, [ESP + 12 + 4]
+   176 000000E8                                 		
+   177 000000E8                                 mts_loop:
+   178 000000E8 89 C3                           		MOV		EBX, EAX
+   179 000000EA 81 C3 00000FFC                  		ADD		EBX, 0XFFC
+   180 000000F0 8B 13                           		MOV		EDX, [EBX]
+   181 000000F2 89 33                           		MOV		[EBX], ESI
+   182 000000F4 83 33 FF                        		XOR		DWORD [EBX], 0XFFFFFFFF
+   183 000000F7 3B 3B                           		CMP		EDI, [EBX]
+   184 000000F9 75 18                           		JNE		mts_fin
+   185 000000FB 83 33 FF                        		XOR		DWORD [EBX], 0XFFFFFFFF
+   186 000000FE 3B 33                           		CMP		ESI, [EBX]
+   187 00000100 75 11                           		JNE		mts_fin
+   188 00000102 89 13                           		MOV		[EBX], EDX
+   189 00000104 05 00001000                     		ADD		EAX, 0X1000
+   190 00000109 3B 44 24 14                     		CMP		EAX, [ESP+12+8]
+   191 0000010D                                 		
+   192 0000010D 76 D9                           		JBE		mts_loop
+   193 0000010F 5B                              		POP 	EBX
+   194 00000110 5E                              		POP		ESI
+   195 00000111 5F                              		POP		EDI
+   196 00000112 C3                              		RET
+   197 00000113                                 		
+   198 00000113                                 mts_fin:
+   199 00000113 89 13                           		MOV		[EBX], EDX
+   200 00000115 5B                              		POP		EBX
+   201 00000116 5E                              		POP		ESI
+   202 00000117 5F                              		POP		EDI
+   203 00000118 C3                              		RET
+   204 00000119                                 		
