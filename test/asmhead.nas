@@ -1,6 +1,11 @@
 ; haribote-os boot asm
 ; TAB=4
 
+[INSTRSET "i486p"]				; 486の命令まで使いたいという記述
+
+VBEMODE EQU     0X105
+;	0x105 : 1024 x  768 x 8bitカラー
+
 BOTPAK	EQU		0x00280000		; bootpackのロード先
 DSKCAC	EQU		0x00100000		; ディスクキャッシュの場所
 DSKCAC0	EQU		0x00008000		; ディスクキャッシュの場所（リアルモード）
@@ -15,8 +20,46 @@ VRAM	EQU		0x0ff8			; グラフィックバッファの開始番地
 
 		ORG		0xc200			; このプログラムがどこに読み込まれるのか
 
-; 画面モードを設定
+		MOV		AX, 0X9000
+		MOV		ES,AX
+		MOV		DI, 0
+		MOV 	AX, 0X4F00
+		INT		0X10
+		CMP		AX,0X004F
+		JNE		scrn320
+		
+		MOV		AX, [ES:DI+4]
+		CMP		AX,0X0200
+		JB		scrn320
+		
+		MOV 	CX, VBEMODE
+		MOV		AX, 0X4F01
+		INT		0X10
+		CMP		AX,0X004F
+		JNE		scrn320
+		
+		CMP		BYTE [ES:DI+0X19], 8
+		JNE		scrn320
+		CMP		BYTE [ES:DI+0X1B], 4
+		JNE		scrn320
+		MOV		AX,[ES:DI+0X00]
+		AND		AX,0X0080
+		JZ		scrn320
+		
+		MOV 	BX,VBEMODE+0X4000
+		MOV		AX,0X4F02
+		INT		0X10
+		MOV		BYTE [VMODE], 8
+		MOV		AX, [ES:DI+0X12]
+		MOV		[SCRNX],AX
+		MOV		AX,[ES:DI+0X14]
+		MOV		[SCRNY],AX
+		MOV		EAX,[ES:DI+0X28]
+		MOV		[VRAM],EAX
+		JMP		keystatus
+		
 
+scrn320:
 		MOV		AL,0x13			; VGAグラフィックス、320x200x8bitカラー
 		MOV		AH,0x00
 		INT		0x10
@@ -26,7 +69,7 @@ VRAM	EQU		0x0ff8			; グラフィックバッファの開始番地
 		MOV		DWORD [VRAM],0x000a0000
 
 ; キーボードのLED状態をBIOSに教えてもらう
-
+keystatus:
 		MOV		AH,0x02
 		INT		0x16 			; keyboard BIOS
 		MOV		[LEDS],AL
@@ -54,8 +97,6 @@ VRAM	EQU		0x0ff8			; グラフィックバッファの開始番地
 		CALL	waitkbdout
 
 ; プロテクトモード移行
-
-[INSTRSET "i486p"]				; 486の命令まで使いたいという記述
 
 		LGDT	[GDTR0]			; 暫定GDTを設定
 		MOV		EAX,CR0
