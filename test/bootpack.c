@@ -308,12 +308,12 @@ void task_b_main(void)
 	timer_settime(timer_ts,2);
 	
 	for(;;){
+		io_cli();
 		count++;
 		sprintf(s, "%10d", count);
-		putfonts8_asc_sht(sht_back, 0,144, COL8_FFFFFF, COL8_008484, s, 10);
-		io_cli();
+		putfonts8_asc_sht(sht_back, 0,244, COL8_FFFFFF, COL8_008484, s, 10);
 		if(fifo32_status(&fifo) == 0){
-			io_sti();
+			io_stihlt();
 		}else{
 			i = fifo32_get(&fifo);
 			io_sti();
