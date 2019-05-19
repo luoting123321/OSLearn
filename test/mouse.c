@@ -1,52 +1,65 @@
+/* マウス関係 */
+
 #include "bootpack.h"
+
 struct FIFO32 *mousefifo;
 int mousedata0;
 
 void inthandler2c(int *esp)
-/* PS/2繝槭え繧ｹ縺九ｉ縺ｮ蜑ｲ繧願ｾｼ縺ｿ */
+/* PS/2マウスからの割り込み */
 {
-	unsigned char data;
-	io_out8(PIC1_OCW2, 0X64);
-	io_out8(PIC0_OCW2, 0X62);
+	int data;
+	io_out8(PIC1_OCW2, 0x64);	/* IRQ-12受付完了をPIC1に通知 */
+	io_out8(PIC0_OCW2, 0x62);	/* IRQ-02受付完了をPIC0に通知 */
 	data = io_in8(PORT_KEYDAT);
 	fifo32_put(mousefifo, data + mousedata0);
 	return;
 }
 
-void enable_mouse(struct FIFO32 *fifo, int data0, struct MOUSE_DEC* mdec)
+#define KEYCMD_SENDTO_MOUSE		0xd4
+#define MOUSECMD_ENABLE			0xf4
+
+void enable_mouse(struct FIFO32 *fifo, int data0, struct MOUSE_DEC *mdec)
 {
+	/* 書き込み先のFIFOバッファを記憶 */
 	mousefifo = fifo;
 	mousedata0 = data0;
-	/* 繝槭え繧ｹ譛牙柑 */
+	/* マウス有効 */
 	wait_KBC_sendready();
 	io_out8(PORT_KEYCMD, KEYCMD_SENDTO_MOUSE);
 	wait_KBC_sendready();
 	io_out8(PORT_KEYDAT, MOUSECMD_ENABLE);
-	mdec->phase = 0;
+	/* うまくいくとACK(0xfa)が送信されてくる */
+	mdec->phase = 0; /* マウスの0xfaを待っている段階 */
 	return;
 }
 
-int mouse_decode(struct MOUSE_DEC* mdec, unsigned char dat)
+int mouse_decode(struct MOUSE_DEC *mdec, unsigned char dat)
 {
-	if(mdec->phase == 0){
-		if(dat == 0xfa){
+	if (mdec->phase == 0) {
+		/* マウスの0xfaを待っている段階 */
+		if (dat == 0xfa) {
 			mdec->phase = 1;
 		}
 		return 0;
 	}
-	if(mdec->phase == 1){
-		if((dat & 0xc8) == 0x08){
+	if (mdec->phase == 1) {
+		/* マウスの1バイト目を待っている段階 */
+		if ((dat & 0xc8) == 0x08) {
+			/* 正しい1バイト目だった */
 			mdec->buf[0] = dat;
-			mdec->phase = 2;	
+			mdec->phase = 2;
 		}
 		return 0;
 	}
-	if(mdec->phase == 2){
+	if (mdec->phase == 2) {
+		/* マウスの2バイト目を待っている段階 */
 		mdec->buf[1] = dat;
 		mdec->phase = 3;
 		return 0;
 	}
-	if(mdec->phase == 3){
+	if (mdec->phase == 3) {
+		/* マウスの3バイト目を待っている段階 */
 		mdec->buf[2] = dat;
 		mdec->phase = 1;
 		mdec->btn = mdec->buf[0] & 0x07;
@@ -58,8 +71,8 @@ int mouse_decode(struct MOUSE_DEC* mdec, unsigned char dat)
 		if ((mdec->buf[0] & 0x20) != 0) {
 			mdec->y |= 0xffffff00;
 		}
-		mdec->y = - mdec->y;
+		mdec->y = - mdec->y; /* マウスではy方向の符号が画面と反対 */
 		return 1;
 	}
-	return -1;
+	return -1; /* ここに来ることはないはず */
 }

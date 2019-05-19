@@ -25,9 +25,6 @@ void init_pic(void)
 	return;
 }
 
-
-
-
 void inthandler27(int *esp)
 /* PIC0からの不完全割り込み対策 */
 /* Athlon64X2機などではチップセットの都合によりPICの初期化時にこの割り込みが1度だけおこる */
