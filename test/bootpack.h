@@ -201,6 +201,7 @@ struct TSS32 {
 struct TASK{
 	int sel, flags;
 	int level, priority;
+	struct FIFO32 fifo;
 	struct TSS32 tss;
 };
 
@@ -227,4 +228,5 @@ struct TASK *task_now(void);
 void task_add(struct TASK *task);
 void task_remove(struct TASK *task);	
 void task_switchsub(void);
+
 	
