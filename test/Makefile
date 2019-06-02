@@ -1,5 +1,6 @@
 OBJS_BOOTPACK = bootpack.obj naskfunc.obj hankaku.obj graphic.obj dsctbl.obj \
-		int.obj fifo.obj mouse.obj keyboard.obj memory.obj sheet.obj mtask.obj timer.obj
+		int.obj fifo.obj keyboard.obj mouse.obj memory.obj sheet.obj timer.obj \
+		mtask.obj window.obj console.obj file.obj
 
 TOOLPATH = ../z_tools/
 INCPATH  = ../z_tools/haribote/
@@ -16,7 +17,7 @@ RULEFILE = $(TOOLPATH)haribote/haribote.rul
 EDIMG    = $(TOOLPATH)edimg.exe
 IMGTOL   = $(TOOLPATH)imgtol.com
 COPY     = copy
-DEL      = del
+DEL      = rm
 
 # デフォルト動作
 
@@ -45,13 +46,18 @@ bootpack.bim : $(OBJS_BOOTPACK) Makefile
 bootpack.hrb : bootpack.bim Makefile
 	$(BIM2HRB) bootpack.bim bootpack.hrb 0
 
-haribote.sys : asmhead.bin bootpack.hrb Makefile
-	$(COPY) /B asmhead.bin+bootpack.hrb haribote.sys
+abc.hrb : abc.nas Makefile
+	$(NASK) abc.nas abc.hrb abc.lst
 
-haribote.img : ipl10.bin haribote.sys Makefile
+haribote.sys : asmhead.bin bootpack.hrb Makefile
+	copy /B asmhead.bin+bootpack.hrb haribote.sys
+
+haribote.img : ipl10.bin haribote.sys abc.hrb Makefile
 	$(EDIMG)   imgin:../z_tools/fdimg0at.tek \
 		wbinimg src:ipl10.bin len:512 from:0 to:0 \
 		copy from:haribote.sys to:@: \
+		copy from:ipl10.nas to:@: \
+		copy from:abc.hrb to:@: \
 		imgout:haribote.img
 
 # 一般規則
@@ -91,3 +97,4 @@ clean :
 src_only :
 	$(MAKE) clean
 	-$(DEL) haribote.img
+	-$(DEL) *.hrb

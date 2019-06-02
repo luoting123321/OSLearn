@@ -16,9 +16,11 @@
 		GLOBAL	_asm_inthandler20, _asm_inthandler21
 		GLOBAL	_asm_inthandler27, _asm_inthandler2c
 		GLOBAL	_memtest_sub
-		GLOBAL	_farjmp
+		GLOBAL	_farjmp, _farcall
+		GLOBAL  _asm_cons_putchar
 		EXTERN	_inthandler20, _inthandler21
 		EXTERN	_inthandler27, _inthandler2c
+		EXTERN	_cons_putchar
 
 [SECTION .text]
 
@@ -173,6 +175,18 @@ _asm_inthandler2c:
 		POP		DS
 		POP		ES
 		IRETD
+		
+_asm_cons_putchar:
+		STI
+		PUSHAD
+		PUSH    1
+		AND		EAX, 0XFF
+		PUSH	EAX	
+		PUSH	DWORD [0x0fec]
+		CALL	_cons_putchar
+		ADD		ESP,12
+		POPAD
+		IRETD
 
 _memtest_sub:	; unsigned int memtest_sub(unsigned int start, unsigned int end)
 		PUSH	EDI						; ÅiEBX, ESI, EDI Ç‡égÇ¢ÇΩÇ¢ÇÃÇ≈Åj
@@ -209,4 +223,8 @@ mts_fin:
 
 _farjmp:		; void farjmp(int eip, int cs);
 		JMP		FAR	[ESP+4]				; eip, cs
+		RET
+		
+_farcall:		; void farcall(int eip, int cs);
+		CALL 	FAR [ESP + 4]
 		RET
