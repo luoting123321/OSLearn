@@ -8,6 +8,7 @@ struct BOOTINFO { /* 0x0ff0-0x0fff */
 	char *vram;
 };
 #define ADR_BOOTINFO	0x00000ff0
+#define ADR_DISKIMG		0x00100000
 
 /* naskfunc.nas */
 void io_hlt(void);
@@ -183,50 +184,40 @@ struct TIMER *timer_alloc(void);
 void timer_free(struct TIMER *timer);
 void timer_init(struct TIMER *timer, struct FIFO32 *fifo, int data);
 void timer_settime(struct TIMER *timer, unsigned int timeout);
-void inthandler20(int *esp); 
+void inthandler20(int *esp);
 
-/*mtask.c*/
-#define MAX_TASKS   1000
-#define TASK_GDT0	3
-#define MAX_TASKS_LV 100
-#define MAX_TASKSLEVELS 10
-
+/* mtask.c */
+#define MAX_TASKS		1000	/* 最大タスク数 */
+#define TASK_GDT0		3		/* TSSをGDTの何番から割り当てるのか */
+#define MAX_TASKS_LV	100
+#define MAX_TASKLEVELS	10
 struct TSS32 {
 	int backlink, esp0, ss0, esp1, ss1, esp2, ss2, cr3;
 	int eip, eflags, eax, ecx, edx, ebx, esp, ebp, esi, edi;
 	int es, cs, ss, ds, fs, gs;
 	int ldtr, iomap;
 };
-
-struct TASK{
-	int sel, flags;
+struct TASK {
+	int sel, flags; /* selはGDTの番号のこと */
 	int level, priority;
 	struct FIFO32 fifo;
 	struct TSS32 tss;
 };
-
-struct TASKLEVEL{
-	int running;
-	int now;
-	struct  TASK *tasks[MAX_TASKS_LV];
+struct TASKLEVEL {
+	int running; /* 動作しているタスクの数 */
+	int now; /* 現在動作しているタスクがどれだか分かるようにするための変数 */
+	struct TASK *tasks[MAX_TASKS_LV];
 };
-
-struct TASKCTL{
-	int now_lv;
-	char lv_change;
-	struct TASKLEVEL level[MAX_TASKSLEVELS];
+struct TASKCTL {
+	int now_lv; /* 現在動作中のレベル */
+	char lv_change; /* 次回タスクスイッチのときに、レベルも変えたほうがいいかどうか */
+	struct TASKLEVEL level[MAX_TASKLEVELS];
 	struct TASK tasks0[MAX_TASKS];
 };
-
 extern struct TIMER *task_timer;
+struct TASK *task_now(void);
 struct TASK *task_init(struct MEMMAN *memman);
 struct TASK *task_alloc(void);
 void task_run(struct TASK *task, int level, int priority);
 void task_switch(void);
-void task_sleep(struct TASK* task);
-struct TASK *task_now(void);
-void task_add(struct TASK *task);
-void task_remove(struct TASK *task);	
-void task_switchsub(void);
-
-	
+void task_sleep(struct TASK *task);
